@@ -1,0 +1,560 @@
+{%- liquid
+  assign heading = section.settings.heading
+  assign subheading = section.settings.subheading
+  assign jersey_front = section.settings.jersey_front
+  assign jersey_back = section.settings.jersey_back
+-%}
+
+{%- style -%}
+  .zoom-showcase {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
+    padding: 80px 24px;
+    overflow: hidden;
+  }
+
+  .zoom-showcase__container {
+    max-width: 1400px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+  }
+
+  .zoom-showcase__header {
+    text-align: center;
+    color: #fff;
+  }
+
+  .zoom-showcase__heading {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin: 0 0 16px;
+  }
+
+  .zoom-showcase__subheading {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    opacity: 0.6;
+    margin: 0;
+  }
+
+  /* View Toggle */
+  .zoom-showcase__toggle {
+    display: flex;
+    background: rgba(255,255,255,0.05);
+    border-radius: 100px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .zoom-showcase__toggle-btn {
+    padding: 12px 28px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .zoom-showcase__toggle-btn:hover {
+    color: rgba(255,255,255,0.8);
+  }
+
+  .zoom-showcase__toggle-btn.is-active {
+    background: #fff;
+    color: #000;
+  }
+
+  .zoom-showcase__main {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+  }
+
+  /* Callouts Container - Left Side (Front Features) */
+  .zoom-showcase__callouts-left {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    flex: 0 0 200px;
+    align-items: flex-end;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .zoom-showcase__callouts-left.is-hidden {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* Callouts Container - Right Side (Back Features) */
+  .zoom-showcase__callouts-right {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    flex: 0 0 200px;
+    align-items: flex-start;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .zoom-showcase__callouts-right.is-hidden {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* Individual Callout */
+  .zoom-showcase__callout {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .zoom-showcase__callout:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateX(4px);
+  }
+
+  .zoom-showcase__callouts-left .zoom-showcase__callout:hover {
+    transform: translateX(-4px);
+  }
+
+  .zoom-showcase__callout-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .zoom-showcase__callout-desc {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .zoom-showcase__callout.is-active {
+    background: rgba(232, 213, 163, 0.15);
+    border-color: rgba(232, 213, 163, 0.4);
+  }
+
+  .zoom-showcase__callout.is-active .zoom-showcase__callout-title {
+    color: #e8d5a3;
+  }
+
+  /* Image Viewport */
+  .zoom-showcase__viewport {
+    position: relative;
+    width: 600px;
+    height: 550px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #0a0a0a;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+
+  .zoom-showcase__image {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center center;
+    transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.4s ease;
+    transform-origin: center center;
+    opacity: 0;
+  }
+
+  .zoom-showcase__image.is-visible {
+    opacity: 1;
+  }
+
+  /* Zoom States - Front View */
+  .zoom-showcase__image.zoom-shoulder {
+    /* Drop Shoulder: Right shoulder seam area where the relaxed fit is visible */
+    transform: scale(2.8) translate(-18%, 22%);
+  }
+
+  .zoom-showcase__image.zoom-flag {
+    /* England Flag: Upper-left chest where the St. George's Cross patch is */
+    transform: scale(3.2) translate(22%, 18%);
+  }
+
+  /* Zoom States - Back View */
+  .zoom-showcase__image.zoom-twill {
+    /* Tackle Twill: "ENGLAND" text at the top of the back */
+    transform: scale(2.8) translate(0%, 25%);
+  }
+
+  .zoom-showcase__image.zoom-length {
+    /* Cropped Length: Bottom hem of the jersey */
+    transform: scale(2.5) translate(0%, -30%);
+  }
+
+  /* Spotlight Overlay */
+  .zoom-showcase__spotlight {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    background: radial-gradient(
+      circle at center,
+      transparent 30%,
+      rgba(0,0,0,0.6) 70%
+    );
+  }
+
+  .zoom-showcase__viewport.is-zoomed .zoom-showcase__spotlight {
+    opacity: 1;
+  }
+
+  /* Mobile Layout */
+  @media (max-width: 900px) {
+    .zoom-showcase {
+      padding: 60px 16px;
+      min-height: auto;
+    }
+
+    .zoom-showcase__container {
+      gap: 32px;
+    }
+
+    .zoom-showcase__heading {
+      font-size: 2rem;
+    }
+
+    .zoom-showcase__main {
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .zoom-showcase__callouts-left,
+    .zoom-showcase__callouts-right {
+      display: none;
+    }
+
+    .zoom-showcase__viewport {
+      width: 100%;
+      max-width: 100%;
+      height: 380px;
+      order: 1;
+      border-radius: 16px;
+    }
+  }
+
+  /* Mobile Callouts - Pill Style */
+  .zoom-showcase__mobile-callouts {
+    display: none;
+  }
+
+  @media (max-width: 900px) {
+    .zoom-showcase__mobile-callouts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      order: 2;
+      width: 100%;
+    }
+
+    .zoom-showcase__mobile-pill {
+      padding: 10px 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 100px;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .zoom-showcase__mobile-pill:active {
+      transform: scale(0.95);
+    }
+
+    .zoom-showcase__mobile-pill.is-active {
+      background: rgba(232, 213, 163, 0.2);
+      border-color: rgba(232, 213, 163, 0.5);
+      color: #e8d5a3;
+    }
+
+    .zoom-showcase__mobile-pill.is-hidden {
+      display: none;
+    }
+  }
+
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    .zoom-showcase__image {
+      transition: none;
+    }
+  }
+{%- endstyle -%}
+
+<section class="zoom-showcase" id="zoom-showcase-{{ section.id }}">
+  <div class="zoom-showcase__container">
+    <div class="zoom-showcase__header">
+      {%- if heading != blank -%}
+        <h2 class="zoom-showcase__heading">{{ heading }}</h2>
+      {%- endif -%}
+      {%- if subheading != blank -%}
+        <p class="zoom-showcase__subheading">{{ subheading }}</p>
+      {%- endif -%}
+    </div>
+
+    <!-- Front/Back Toggle -->
+    <div class="zoom-showcase__toggle">
+      <button type="button" class="zoom-showcase__toggle-btn is-active" data-view="front">Front</button>
+      <button type="button" class="zoom-showcase__toggle-btn" data-view="back">Back</button>
+    </div>
+
+    <div class="zoom-showcase__main">
+      <!-- Left Callouts (Front Features) -->
+      <div class="zoom-showcase__callouts-left" data-callout-group="front">
+        <div class="zoom-showcase__callout" data-zoom-target="shoulder" data-view="front">
+          <h3 class="zoom-showcase__callout-title">Drop Shoulder</h3>
+          <p class="zoom-showcase__callout-desc">Relaxed fit for all-day comfort</p>
+        </div>
+        <div class="zoom-showcase__callout" data-zoom-target="flag" data-view="front">
+          <h3 class="zoom-showcase__callout-title">Embroidered Flag</h3>
+          <p class="zoom-showcase__callout-desc">Premium patch representing your roots</p>
+        </div>
+      </div>
+
+      <!-- Jersey Image Viewport -->
+      <div class="zoom-showcase__viewport">
+        {%- if jersey_front != blank -%}
+          <img 
+            class="zoom-showcase__image is-visible"
+            src="{{ jersey_front | image_url: width: 1200 }}"
+            alt="Jersey front view"
+            loading="lazy"
+            data-image="front"
+          >
+        {%- else -%}
+          <div class="zoom-showcase__image is-visible" data-image="front" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 0.9rem;">
+            Upload front image in Theme Settings
+          </div>
+        {%- endif -%}
+        
+        {%- if jersey_back != blank -%}
+          <img 
+            class="zoom-showcase__image"
+            src="{{ jersey_back | image_url: width: 1200 }}"
+            alt="Jersey back view"
+            loading="lazy"
+            data-image="back"
+          >
+        {%- else -%}
+          <div class="zoom-showcase__image" data-image="back" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 0.9rem;">
+            Upload back image in Theme Settings
+          </div>
+        {%- endif -%}
+        
+        <div class="zoom-showcase__spotlight"></div>
+      </div>
+
+      <!-- Right Callouts (Back Features) -->
+      <div class="zoom-showcase__callouts-right is-hidden" data-callout-group="back">
+        <div class="zoom-showcase__callout" data-zoom-target="twill" data-view="back">
+          <h3 class="zoom-showcase__callout-title">Tackle Twill</h3>
+          <p class="zoom-showcase__callout-desc">Durable embroidery for numbers and letters</p>
+        </div>
+        <div class="zoom-showcase__callout" data-zoom-target="length" data-view="back">
+          <h3 class="zoom-showcase__callout-title">Cropped Length</h3>
+          <p class="zoom-showcase__callout-desc">Modern silhouette that sits just right</p>
+        </div>
+      </div>
+
+      <!-- Mobile Pills (hidden on desktop) -->
+      <div class="zoom-showcase__mobile-callouts">
+        <button type="button" class="zoom-showcase__mobile-pill" data-zoom-target="shoulder" data-view="front">Drop Shoulder</button>
+        <button type="button" class="zoom-showcase__mobile-pill" data-zoom-target="flag" data-view="front">Embroidered Flag</button>
+        <button type="button" class="zoom-showcase__mobile-pill is-hidden" data-zoom-target="twill" data-view="back">Tackle Twill</button>
+        <button type="button" class="zoom-showcase__mobile-pill is-hidden" data-zoom-target="length" data-view="back">Cropped Length</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (function() {
+    const section = document.getElementById('zoom-showcase-{{ section.id }}');
+    if (!section) return;
+
+    const viewport = section.querySelector('.zoom-showcase__viewport');
+    const frontImage = section.querySelector('[data-image="front"]');
+    const backImage = section.querySelector('[data-image="back"]');
+    const toggleBtns = section.querySelectorAll('.zoom-showcase__toggle-btn');
+    const desktopCallouts = section.querySelectorAll('.zoom-showcase__callout');
+    const mobilePills = section.querySelectorAll('.zoom-showcase__mobile-pill');
+    const leftCallouts = section.querySelector('[data-callout-group="front"]');
+    const rightCallouts = section.querySelector('[data-callout-group="back"]');
+
+    let currentView = 'front';
+
+    const zoomClasses = {
+      'shoulder': 'zoom-shoulder',
+      'flag': 'zoom-flag',
+      'twill': 'zoom-twill',
+      'length': 'zoom-length'
+    };
+
+    function clearZoom() {
+      Object.values(zoomClasses).forEach(cls => {
+        if (frontImage) frontImage.classList.remove(cls);
+        if (backImage) backImage.classList.remove(cls);
+      });
+      viewport.classList.remove('is-zoomed');
+      desktopCallouts.forEach(c => c.classList.remove('is-active'));
+      mobilePills.forEach(p => p.classList.remove('is-active'));
+    }
+
+    function switchView(view) {
+      currentView = view;
+      clearZoom();
+
+      // Toggle buttons
+      toggleBtns.forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.view === view);
+      });
+
+      // Images
+      if (frontImage) frontImage.classList.toggle('is-visible', view === 'front');
+      if (backImage) backImage.classList.toggle('is-visible', view === 'back');
+
+      // Callout groups
+      if (leftCallouts) leftCallouts.classList.toggle('is-hidden', view !== 'front');
+      if (rightCallouts) rightCallouts.classList.toggle('is-hidden', view !== 'back');
+
+      // Mobile pills
+      mobilePills.forEach(pill => {
+        pill.classList.toggle('is-hidden', pill.dataset.view !== view);
+      });
+    }
+
+    function applyZoom(target, activeElement) {
+      clearZoom();
+      const zoomClass = zoomClasses[target];
+      if (!zoomClass) return;
+
+      const activeImage = currentView === 'front' ? frontImage : backImage;
+      if (activeImage) {
+        activeImage.classList.add(zoomClass);
+      }
+      viewport.classList.add('is-zoomed');
+      if (activeElement) activeElement.classList.add('is-active');
+    }
+
+    // Toggle buttons
+    toggleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchView(btn.dataset.view);
+      });
+    });
+
+    // Desktop Callouts - Hover behavior
+    desktopCallouts.forEach(callout => {
+      const target = callout.getAttribute('data-zoom-target');
+
+      callout.addEventListener('mouseenter', () => {
+        applyZoom(target, callout);
+      });
+
+      callout.addEventListener('mouseleave', () => {
+        clearZoom();
+      });
+    });
+
+    // Mobile Pills - Tap toggle behavior
+    mobilePills.forEach(pill => {
+      const target = pill.getAttribute('data-zoom-target');
+
+      pill.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isActive = pill.classList.contains('is-active');
+        
+        if (isActive) {
+          clearZoom();
+        } else {
+          applyZoom(target, pill);
+        }
+      });
+    });
+
+    // Tap anywhere on viewport to reset (mobile UX)
+    viewport.addEventListener('click', () => {
+      clearZoom();
+    });
+
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Zoom Showcase",
+  "tag": "section",
+  "class": "section-zoom-showcase",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Every Detail, Intentional."
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Designed for those who notice the difference."
+    },
+    {
+      "type": "header",
+      "content": "Jersey Images"
+    },
+    {
+      "type": "image_picker",
+      "id": "jersey_front",
+      "label": "Front View",
+      "info": "High-resolution front view of the jersey."
+    },
+    {
+      "type": "image_picker",
+      "id": "jersey_back",
+      "label": "Back View",
+      "info": "High-resolution back view of the jersey."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Zoom Showcase"
+    }
+  ]
+}
+{% endschema %}

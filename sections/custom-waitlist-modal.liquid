@@ -1,0 +1,1629 @@
+{%- liquid
+  assign button_text = section.settings.button_text
+  assign modal_headline = section.settings.modal_headline
+  assign modal_subheadline = section.settings.modal_subheadline
+  assign klaviyo_form_id = section.settings.klaviyo_form_id
+  assign success_lottie = section.settings.success_lottie
+  assign show_shirt_type = section.settings.show_shirt_type
+  assign show_size = section.settings.show_size
+-%}
+
+{%- style -%}
+  /* Waitlist Modal Styles */
+  .custom-waitlist-modal {
+    --modal-bg: rgba(20, 20, 20, 0.98);
+    --modal-card-bg: #1a1a1a;
+    --modal-text: #ffffff;
+    --modal-accent: #3b82f6;
+    --modal-border: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Sticky Trigger Button */
+  .waitlist-trigger-wrapper {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+  }
+
+  .waitlist-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 48px;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #000;
+    background: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    min-height: 56px; /* 48px+ tap target */
+  }
+
+  .waitlist-trigger:hover {
+    background: #f0f0f0;
+    transform: scale(1.02);
+    box-shadow: 0 6px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .waitlist-trigger:focus-visible {
+    outline: 2px solid var(--modal-accent);
+    outline-offset: 4px;
+  }
+
+  /* Modal Overlay */
+  .waitlist-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Important for scrolling from top */
+    padding: 24px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .waitlist-modal[open] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .waitlist-modal__backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: -1;
+  }
+
+  .waitlist-modal__content {
+    position: relative;
+    width: 100%;
+    max-width: 580px;
+    margin: auto 0; /* Auto margins in flex-column provide vertical centering while allowing scroll */
+    background: var(--modal-card-bg);
+    border: 1px solid var(--modal-border);
+    border-radius: 24px;
+    padding: 48px 40px;
+    color: var(--modal-text);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    pointer-events: auto;
+    /* Ensure room at bottom for scrolling */
+    flex-shrink: 0;
+    margin-top: 40px; 
+    margin-bottom: 40px;
+  }
+
+  .waitlist-modal[open] .waitlist-modal__content {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .waitlist-modal__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--modal-text);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+  }
+
+  .waitlist-modal__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .waitlist-modal__close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .waitlist-modal__header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .waitlist-modal__headline {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+
+  .waitlist-modal__subheadline {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin: 0;
+  }
+
+  .waitlist-modal__pricing {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+  }
+
+  .waitlist-modal__price-original {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: line-through;
+  }
+
+  .waitlist-modal__price-current {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .waitlist-modal__price-label {
+    font-size: 0.75rem;
+    color: #FFC107;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-left: 4px;
+    font-weight: 500;
+  }
+
+  /* Form Styles */
+  .waitlist-form {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .waitlist-form__field {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  /* Descending z-index to ensure dropdowns in earlier fields overlap later fields */
+  .waitlist-form__field:nth-child(1) { z-index: 3; }
+  .waitlist-form__field:nth-child(2) { z-index: 2; }
+  .waitlist-form__field:nth-child(3) { z-index: 1; }
+
+  .waitlist-modal[open] .waitlist-form__field {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .waitlist-modal[open] .waitlist-form__field:nth-child(1) { transition-delay: 0.1s; }
+  .waitlist-modal[open] .waitlist-form__field:nth-child(2) { transition-delay: 0.2s; }
+  .waitlist-modal[open] .waitlist-form__field:nth-child(3) { transition-delay: 0.3s; }
+  .waitlist-modal[open] .waitlist-form__field:nth-child(4) { transition-delay: 0.4s; }
+
+  .waitlist-form__label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  .waitlist-form__input,
+  .waitlist-form__select {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 1rem;
+    color: var(--modal-text);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--modal-border);
+    border-radius: 12px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    appearance: none;
+  }
+
+  .waitlist-form__input:focus,
+  .waitlist-form__select:focus {
+    outline: none;
+    border-color: var(--modal-accent);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .waitlist-form__input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .waitlist-form__input:invalid:not(:placeholder-shown) {
+    border-color: #ef4444;
+  }
+
+  .waitlist-form__select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 48px;
+  }
+
+  .waitlist-form__submit {
+    margin-top: 8px;
+    padding: 18px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #000;
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+    min-height: 56px;
+  }
+
+  .waitlist-form__submit:hover {
+    background: #f0f0f0;
+  }
+
+  .waitlist-form__submit:active {
+    transform: scale(0.98);
+  }
+
+  .waitlist-form__submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Selection Hub Styles */
+  .selection-hub {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--modal-border);
+    border-radius: 20px;
+    margin-top: 10px;
+  }
+
+  .selection-hub__title {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+    margin-bottom: 12px;
+  }
+
+  .selection-hub__note {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+    margin: 12px 0 0;
+    text-align: center;
+  }
+
+  /* Country Picker */
+  .country-picker {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 4px 12px;
+    margin: 0 -4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .country-picker::-webkit-scrollbar {
+    display: none;
+  }
+
+  .country-picker__item {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    border: 1px solid var(--modal-border);
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    font-size: 1.5rem;
+  }
+
+  .country-picker__item:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .country-picker__item.is-selected {
+    background: #fff;
+    border-color: #fff;
+    color: #000;
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+  }
+
+  .country-picker__item img {
+    width: 36px;
+    height: auto;
+    border-radius: 4px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+
+  /* Size Picker */
+  .size-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .size-picker__btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--modal-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .size-picker__btn:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .size-picker__btn.is-selected {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+
+  /* Add Button */
+  .selection-hub__add {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px dashed var(--modal-border);
+    background: transparent;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .selection-hub__add:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-style: solid;
+    border-color: #fff;
+  }
+
+  .selection-hub__add:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Custom Dropdown Styles */
+  .custom-dropdown {
+    position: relative;
+    width: 100%;
+  }
+
+  .custom-dropdown__trigger {
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--modal-border);
+    border-radius: 14px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    text-align: left;
+  }
+
+  .custom-dropdown__trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .custom-dropdown__trigger-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .custom-dropdown__trigger-content img {
+    border-radius: 2px;
+    width: 24px;
+    height: auto;
+  }
+
+  .custom-dropdown__arrow {
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .custom-dropdown.is-open .custom-dropdown__arrow {
+    transform: rotate(180deg);
+  }
+
+  .custom-dropdown__menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    background: #0a0a0a; /* Almost pure black, fully solid */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 18px;
+    overflow-y: auto;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-20px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 1);
+    padding: 8px;
+  }
+
+  .custom-dropdown.is-open .custom-dropdown__menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .custom-dropdown__option {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+  }
+
+  .custom-dropdown__option:hover {
+    background: rgba(255, 255, 255, 0.08);
+    padding-left: 20px;
+  }
+
+  .custom-dropdown__option img {
+    width: 24px;
+    height: auto;
+    border-radius: 2px;
+  }
+
+  .custom-dropdown__option.is-selected {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--modal-accent);
+  }
+
+  /* Size Picker Improvements */
+  .size-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  /* Selection Basket */
+  .selection-basket {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .basket-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--modal-border);
+    border-radius: 16px;
+    animation: basketIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes basketIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .basket-item__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .basket-item__country {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .basket-item__sizes {
+    font-size: 0.8rem;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .basket-item__remove {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .basket-item__remove:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  /* Quantity Controls */
+  .basket-item__controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .basket-qty {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .qty-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .qty-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .qty-val {
+    min-width: 24px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  /* Error Message */
+  .waitlist-form__error {
+    font-size: 0.8rem;
+    color: #ef4444;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .waitlist-form__input:invalid:not(:placeholder-shown) + .waitlist-form__error {
+    display: block;
+  }
+
+  /* Success State */
+  .waitlist-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 16px;
+    padding: 60px 24px;
+    min-height: 300px;
+  }
+
+  .waitlist-success.is-visible {
+    display: flex;
+  }
+
+  .waitlist-success__icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .waitlist-success__icon svg {
+    width: 32px;
+    height: 32px;
+    color: #10b981;
+  }
+
+  .waitlist-success__lottie {
+    width: 100px;
+    height: 100px;
+  }
+
+  .waitlist-success__lottie:empty {
+    display: none;
+  }
+
+  .waitlist-success__headline {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0;
+    color: #ffffff;
+  }
+
+  .waitlist-success__message {
+    font-size: 0.95rem;
+    opacity: 0.7;
+    margin: 0;
+    max-width: 280px;
+    line-height: 1.5;
+  }
+
+  /* Klaviyo Embed */
+  .klaviyo-embed-container {
+    display: none;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .waitlist-modal,
+    .waitlist-modal__content,
+    .waitlist-form__field {
+      transition: none !important;
+    }
+  }
+
+  /* Mobile adjustments */
+  @media (max-width: 767px) {
+    .waitlist-modal__backdrop {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: rgba(10, 10, 10, 0.95); /* Solid opaque fallback */
+    }
+
+    .waitlist-trigger-wrapper {
+      bottom: 24px;
+    }
+
+    .waitlist-modal__content {
+      padding: 56px 24px 40px;
+      border-radius: 20px;
+    }
+
+    /* Ensure back button doesn't clash with close button */
+    .custom-form__back {
+      margin-top: 8px;
+    }
+  }
+
+  /* ============================================
+     OPTION PICKER SCREEN (Standard vs Customize)
+     Refined Apple-style: typography-first, minimal
+     ============================================ */
+  
+  .option-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .option-picker__header {
+    text-align: center;
+    margin-bottom: 0;
+  }
+
+  .option-picker__title {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+    color: #fff;
+  }
+
+  .option-picker__subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+  }
+
+  .option-picker__cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  @media (max-width: 600px) {
+    .option-picker__cards {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
+  /* Option Card Base — Clean, Minimal */
+  .option-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 36px 28px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    min-height: 320px;
+  }
+
+  .option-card:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.4);
+    outline-offset: 4px;
+  }
+
+  .option-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
+
+  /* Card Label — Subtle, not a badge */
+  .option-card__label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 12px;
+  }
+
+  .option-card--customize .option-card__label {
+    color: rgba(232, 213, 163, 0.8);
+  }
+
+  /* Card Title — Single line */
+  .option-card__title {
+    font-size: 1.35rem;
+    font-weight: 500;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  /* Description — Fixed height area */
+  .option-card__description {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.55);
+    min-height: 48px;
+  }
+
+  /* Pricing — Push to bottom with auto margin */
+  .option-card__pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 24px;
+    margin-bottom: 20px;
+  }
+
+  .option-card__price-original {
+    font-size: 0.95rem;
+    text-decoration: line-through;
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .option-card__price-current {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  /* Bespoke price has subtle warm tone */
+  .option-card--customize .option-card__price-current {
+    color: #e8d5a3;
+  }
+
+  /* Card CTA — Full width, consistent */
+  .option-card__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: all 0.25s ease;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .option-card__cta:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Bespoke button — subtle warm accent */
+  .option-card--customize .option-card__cta {
+    background: rgba(232, 213, 163, 0.12);
+    border-color: rgba(232, 213, 163, 0.3);
+    color: #e8d5a3;
+  }
+
+  .option-card--customize .option-card__cta:hover {
+    background: rgba(232, 213, 163, 0.2);
+    border-color: rgba(232, 213, 163, 0.45);
+  }
+
+  .option-card__cta svg {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+  }
+
+  /* ============================================
+     CUSTOM REQUEST FORM
+     ============================================ */
+  
+  .custom-form {
+    display: none;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .custom-form.is-active {
+    display: flex;
+  }
+
+  .custom-form__back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s ease;
+    align-self: flex-start;
+  }
+
+  .custom-form__back:hover {
+    color: #fff;
+  }
+
+  .custom-form__back svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .custom-form__header {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .custom-form__headline {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    color: #fff;
+  }
+
+  .custom-form__subheadline {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 16px;
+  }
+
+  .custom-form__pricing {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: rgba(232, 213, 163, 0.1);
+    border: 1px solid rgba(232, 213, 163, 0.25);
+    border-radius: 10px;
+  }
+
+  .custom-form__price-original {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: line-through;
+  }
+
+  .custom-form__price-current {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #e8d5a3;
+  }
+
+  .custom-form__price-label {
+    font-size: 0.7rem;
+    color: #e8d5a3;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  .custom-form__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .custom-form__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    .custom-form__row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .custom-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .custom-form__label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .custom-form__input,
+  .custom-form__select,
+  .custom-form__textarea {
+    width: 100%;
+    padding: 14px 18px;
+    font-size: 1rem;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .custom-form__input:focus,
+  .custom-form__select:focus,
+  .custom-form__textarea:focus {
+    outline: none;
+    border-color: #e8d5a3;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .custom-form__input::placeholder,
+  .custom-form__textarea::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .custom-form__select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 44px;
+  }
+
+  .custom-form__textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  .custom-form__hint {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: -4px;
+  }
+
+  .custom-form__submit {
+    padding: 18px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #e8d5a3;
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 56px;
+  }
+
+  .custom-form__submit:hover {
+    box-shadow: 0 8px 30px rgba(232, 213, 163, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .custom-form__submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Custom Success State */
+  .custom-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    padding: 20px 0;
+  }
+
+  .custom-success.is-visible {
+    display: flex;
+  }
+
+  .custom-success__icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(232, 213, 163, 0.1);
+    border: 2px solid rgba(232, 213, 163, 0.25);
+    border-radius: 50%;
+    font-size: 2.5rem;
+  }
+
+  .custom-success__headline {
+    font-size: 1.5rem;
+    font-weight: 300;
+    margin: 0;
+    color: #fff;
+  }
+
+  .custom-success__message {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* Screen state management */
+  .waitlist-screen {
+    display: none;
+  }
+
+  .waitlist-screen.is-active {
+    display: block;
+  }
+
+  /* Hide standard form by default (shown via JS) */
+  .waitlist-form[data-standard-form] {
+    display: none;
+  }
+
+  .waitlist-form[data-standard-form].is-active {
+    display: flex;
+  }
+{%- endstyle -%}
+
+<!-- Floating Trigger Button -->
+{%- unless section.settings.hide_trigger_button -%}
+  <div class="waitlist-trigger-wrapper">
+    <button 
+      class="waitlist-trigger" 
+      type="button" 
+      aria-haspopup="dialog"
+      data-modal-open
+    >
+      {{ button_text | default: 'Join the Waitlist' }}
+    </button>
+  </div>
+{%- endunless -%}
+
+<!-- Modal Overlay -->
+<div 
+  class="waitlist-modal custom-waitlist-modal" 
+  id="waitlist-modal-{{ section.id }}"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="waitlist-headline-{{ section.id }}"
+  data-section-id="{{ section.id }}"
+  {% if success_lottie != blank %}
+    data-success-lottie="{{ success_lottie }}"
+  {% endif %}
+>
+  <div class="waitlist-modal__backdrop" data-modal-close></div>
+
+  <div class="waitlist-modal__content">
+    <button 
+      class="waitlist-modal__close" 
+      type="button" 
+      aria-label="Close modal"
+      data-modal-close
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <!-- ============================================
+         SCREEN 1: OPTION PICKER (Standard vs Customize)
+         ============================================ -->
+    <div class="waitlist-screen is-active" data-screen="picker">
+      <div class="option-picker">
+        <div class="option-picker__header">
+          <h2 class="option-picker__title">How would you like to join?</h2>
+          <p class="option-picker__subtitle">Choose the option that fits you best</p>
+        </div>
+
+        <div class="option-picker__cards">
+          <!-- Standard Option -->
+          <button type="button" class="option-card" data-option="standard">
+            <span class="option-card__label">Collection</span>
+            <h3 class="option-card__title">Standard Edition</h3>
+            <p class="option-card__description">Choose from our curated collection of national team jerseys.</p>
+            <div class="option-card__pricing">
+              <span class="option-card__price-original" data-price-convert="99.99">£99.99</span>
+              <span class="option-card__price-current" data-price-convert="59.99">£59.99</span>
+            </div>
+            <span class="option-card__cta">Select standard</span>
+          </button>
+
+          <!-- Customize Option -->
+          <button type="button" class="option-card option-card--customize" data-option="customize">
+            <span class="option-card__label">Bespoke</span>
+            <h3 class="option-card__title">Custom Edition</h3>
+            <p class="option-card__description">Design your own jersey with us. Colors, numbers, names, everything.</p>
+            <div class="option-card__pricing">
+              <span class="option-card__price-original" data-price-convert="199.99">{{ section.settings.custom_original_price | default: '£199.99' }}</span>
+              <span class="option-card__price-current" data-price-convert="99.99">{{ section.settings.custom_current_price | default: '£99.99' }}</span>
+            </div>
+            <span class="option-card__cta">Make it yours</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         SCREEN 2: STANDARD FORM (Existing)
+         ============================================ -->
+    <div class="waitlist-screen" data-screen="standard">
+      <div class="waitlist-modal__header">
+        <!-- Back button removed per request -->
+        <h2 class="waitlist-modal__headline" id="waitlist-headline-{{ section.id }}">
+          {{ modal_headline | default: 'Get Early Access' }}
+        </h2>
+        {%- if modal_subheadline != blank -%}
+          <p class="waitlist-modal__subheadline">{{ modal_subheadline }}</p>
+        {%- endif -%}
+
+        {%- if section.settings.show_pricing -%}
+        <div class="waitlist-modal__pricing">
+          <span class="waitlist-modal__price-original" data-price-convert="99.99">£99.99</span>
+          <span class="waitlist-modal__price-current" data-price-convert="65.00">£65.00</span>
+          <span class="waitlist-modal__price-label">{{ section.settings.price_label }}</span>
+        </div>
+        {%- endif -%}
+      </div>
+
+      <!-- Native Form (fallback if no Klaviyo ID) -->
+      <form class="waitlist-form is-active" id="waitlist-form-{{ section.id }}" data-waitlist-form data-standard-form>
+        
+        <div class="waitlist-form__field">
+          <label class="waitlist-form__label">Step 1: Choose your jerseys</label>
+          
+          <div class="selection-hub">
+            <div class="selection-hub__group">
+              <span class="selection-hub__title">Pick A Country</span>
+              <div class="custom-dropdown" data-country-dropdown>
+                <button type="button" class="custom-dropdown__trigger" data-dropdown-trigger>
+                  <div class="custom-dropdown__trigger-content" data-dropdown-current>
+                    <span>Select a country...</span>
+                  </div>
+                  <svg class="custom-dropdown__arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </button>
+                
+                <div class="custom-dropdown__menu" data-dropdown-menu>
+                  {% comment %} Detailed list of 2026 Qualified Teams + Nigeria {% endcomment %}
+                  {% assign countries = "USA,Canada,Mexico,Ghana,Nigeria,Algeria,Cape Verde,Egypt,Ivory Coast,Morocco,Senegal,South Africa,Tunisia,Argentina,Brazil,Colombia,Ecuador,Paraguay,Uruguay,Australia,Iran,Japan,Jordan,Qatar,Saudi Arabia,South Korea,Uzbekistan,New Zealand,Austria,Belgium,Croatia,England,France,Germany,Netherlands,Norway,Portugal,Scotland,Spain,Switzerland" | split: "," %}
+                  {% assign codes = "us,ca,mx,gh,ng,dz,cv,eg,ci,ma,sn,za,tn,ar,br,co,ec,py,uy,au,ir,jp,jo,qa,sa,kr,uz,nz,at,be,hr,gb-eng,fr,de,nl,no,pt,gb-sct,es,ch" | split: "," %}
+                  
+                  {% for country in countries %}
+                    <div class="custom-dropdown__option" data-value="{{ country }}" data-flag="https://flagcdn.com/{{ codes[forloop.index0] }}.svg">
+                      <img src="https://flagcdn.com/{{ codes[forloop.index0] }}.svg" alt="{{ country }}" loading="lazy">
+                      <span>{{ country }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <p class="selection-hub__note">More countries coming soon. This is just the beginning.</p>
+            </div>
+
+            <div class="selection-hub__group">
+              <span class="selection-hub__title">Select Size(s)</span>
+              <div class="size-picker" data-size-picker>
+                <button type="button" class="size-picker__btn" data-value="XS">XS</button>
+                <button type="button" class="size-picker__btn" data-value="S">S</button>
+                <button type="button" class="size-picker__btn" data-value="M">M</button>
+                <button type="button" class="size-picker__btn" data-value="L">L</button>
+                <button type="button" class="size-picker__btn" data-value="XL">XL</button>
+                <button type="button" class="size-picker__btn" data-value="XXL">XXL</button>
+              </div>
+            </div>
+
+            <button type="button" class="selection-hub__add" data-add-to-basket disabled>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Add to Selections
+            </button>
+          </div>
+
+          <div class="selection-basket" data-selection-basket>
+            <!-- Items will be added here via JS -->
+          </div>
+
+          <input type="hidden" name="selections_json" data-selections-input required>
+          <div class="waitlist-form__error selections-error" style="display: none; margin-top: 8px;">Please add at least one selection</div>
+        </div>
+
+        <div class="waitlist-form__field">
+          <label class="waitlist-form__label" for="waitlist-email-{{ section.id }}">
+            Step 2: Email Address
+          </label>
+          <input 
+            class="waitlist-form__input"
+            type="email" 
+            id="waitlist-email-{{ section.id }}"
+            name="email"
+            placeholder="your@email.com"
+            required
+            autocomplete="email"
+          >
+          <span class="waitlist-form__error">Please enter a valid email address</span>
+        </div>
+
+        <div class="waitlist-form__field">
+          <button class="waitlist-form__submit" type="submit">
+            Join the Waitlist
+          </button>
+        </div>
+      </form>
+
+      <!-- Klaviyo Integration Data -->
+      {%- if klaviyo_list_id != blank -%}
+        <div class="klaviyo-embed-container" data-klaviyo-list-id="{{ klaviyo_list_id }}"></div>
+      {%- endif -%}
+
+      <!-- Success State -->
+      <div class="waitlist-success" data-waitlist-success>
+        <div class="waitlist-success__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </div>
+        <div class="waitlist-success__lottie" data-success-lottie-container></div>
+        <h3 class="waitlist-success__headline">You're on the list!</h3>
+        <p class="waitlist-success__message">
+          Thank you for joining. We'll notify you when early access goes live.
+        </p>
+        <p class="waitlist-success__message" style="opacity: 0.7; font-size: 0.85em; margin-top: 8px;">
+          📧 Don't see our email? Check your spam or junk folder.
+        </p>
+      </div>
+    </div>
+
+    <!-- ============================================
+         SCREEN 3: CUSTOM REQUEST FORM
+         ============================================ -->
+    <div class="waitlist-screen" data-screen="customize">
+      <form class="custom-form is-active" id="custom-form-{{ section.id }}" data-custom-form>
+        <button type="button" class="custom-form__back" data-back-to-picker>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Back
+        </button>
+
+        <div class="custom-form__header">
+          <h2 class="custom-form__headline">Bespoke Edition</h2>
+          <p class="custom-form__subheadline">Tell us your vision and we'll bring it to life</p>
+          <div class="custom-form__pricing">
+            <span class="custom-form__price-original" data-price-convert="199.99">{{ section.settings.custom_original_price | default: '£199.99' }}</span>
+            <span class="custom-form__price-current" data-price-convert="99.99">{{ section.settings.custom_current_price | default: '£99.99' }}</span>
+            <span class="custom-form__price-label">Founder's Price</span>
+          </div>
+        </div>
+
+        <div class="custom-form__fields">
+          <div class="custom-form__row">
+            <div class="custom-form__field">
+              <label class="custom-form__label" for="custom-name-{{ section.id }}">Your Name</label>
+              <input 
+                class="custom-form__input"
+                type="text"
+                id="custom-name-{{ section.id }}"
+                name="name"
+                placeholder="John Doe"
+                required
+                autocomplete="name"
+              >
+            </div>
+            <div class="custom-form__field">
+              <label class="custom-form__label" for="custom-email-{{ section.id }}">Email Address</label>
+              <input 
+                class="custom-form__input"
+                type="email"
+                id="custom-email-{{ section.id }}"
+                name="email"
+                placeholder="your@email.com"
+                required
+                autocomplete="email"
+              >
+            </div>
+          </div>
+
+          <div class="custom-form__row">
+            <div class="custom-form__field">
+              <label class="custom-form__label" for="custom-country-{{ section.id }}">Country/Team (Optional)</label>
+              <select 
+                class="custom-form__select"
+                id="custom-country-{{ section.id }}"
+                name="country"
+              >
+                <option value="">Select a country...</option>
+                {% assign countries = "Ghana,Nigeria,England,USA,France,Germany,Brazil,Argentina,Spain,Portugal,Mexico,Other" | split: "," %}
+                {% for country in countries %}
+                  <option value="{{ country }}">{{ country }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="custom-form__field">
+              <label class="custom-form__label" for="custom-size-{{ section.id }}">Size (Optional)</label>
+              <select 
+                class="custom-form__select"
+                id="custom-size-{{ section.id }}"
+                name="size"
+              >
+                <option value="">Select size...</option>
+                <option value="XS">XS</option>
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="custom-form__field">
+            <label class="custom-form__label" for="custom-vision-{{ section.id }}">Your Vision</label>
+            <textarea 
+              class="custom-form__textarea"
+              id="custom-vision-{{ section.id }}"
+              name="vision"
+              placeholder="Tell us about your dream jersey. Colors, numbers, names, any special touches you have in mind..."
+              required
+            ></textarea>
+            <p class="custom-form__hint">We'll reach out within 24 hours to discuss your ideas</p>
+          </div>
+
+          <button class="custom-form__submit" type="submit">
+            Request Consultation
+          </button>
+        </div>
+      </form>
+
+      <!-- Custom Success State -->
+      <div class="custom-success" data-custom-success>
+        <div class="custom-success__icon">🎨</div>
+        <h3 class="custom-success__headline">Request Received!</h3>
+        <p class="custom-success__message">
+          We'll be in touch within 24 hours to bring your vision to life.
+        </p>
+        <p class="custom-success__message" style="opacity: 0.7; font-size: 0.85em; margin-top: 8px;">
+          📧 Don't see our email? Check your spam or junk folder.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Waitlist Modal",
+  "tag": "section",
+  "class": "section-waitlist-modal",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Trigger Button"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_trigger_button",
+      "label": "Hide generic trigger button",
+      "default": true,
+      "info": "Check this if you are using the Hero button to trigger the modal."
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Join the Waitlist"
+    },
+    {
+      "type": "header",
+      "content": "Modal Content"
+    },
+    {
+      "type": "text",
+      "id": "modal_headline",
+      "label": "Modal Headline",
+      "default": "Get Early Access"
+    },
+    {
+      "type": "textarea",
+      "id": "modal_subheadline",
+      "label": "Modal Subheadline",
+      "default": "Be the first to know when we launch and receive exclusive member pricing."
+    },
+    {
+      "type": "header",
+      "content": "Form Options"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_size",
+      "label": "Show Size Selection",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Pricing Display"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pricing",
+      "label": "Show Pricing",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "original_price",
+      "label": "Original Price",
+      "default": "£99.99"
+    },
+    {
+      "type": "text",
+      "id": "current_price",
+      "label": "Current Price",
+      "default": "£59.99"
+    },
+    {
+      "type": "text",
+      "id": "price_label",
+      "label": "Price Label",
+      "default": "Early Access"
+    },
+    {
+      "type": "header",
+      "content": "Bespoke Edition Pricing"
+    },
+    {
+      "type": "text",
+      "id": "custom_original_price",
+      "label": "Custom Original Price",
+      "default": "£199.99"
+    },
+    {
+      "type": "text",
+      "id": "custom_current_price",
+      "label": "Custom Current Price",
+      "default": "£99.99"
+    },
+    {
+      "type": "header",
+      "content": "Klaviyo Settings"
+    },
+    {
+      "type": "text",
+      "id": "klaviyo_list_id",
+      "label": "Klaviyo List ID",
+      "default": "SztCJT",
+      "info": "Values found in Klaviyo > Lists & Segments > [Your List] > Settings. Look for a 6-character ID (e.g., XyZ123). This ensures the generic popup doesn't appear."
+    },
+    {
+      "type": "header",
+      "content": "Success Animation"
+    },
+    {
+      "type": "text",
+      "id": "success_lottie",
+      "label": "Success Lottie URL",
+      "info": "Upload JSON to Content > Files, then paste the URL here. Recommended: Get free animations from lottiefiles.com"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Waitlist Modal"
+    }
+  ]
+}
+{% endschema %}

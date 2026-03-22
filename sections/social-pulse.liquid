@@ -1,0 +1,43 @@
+{% schema %}
+{
+  "name": "Global Pulse",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable",
+      "label": "Enable Global Pulse Notifications",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "interval",
+      "label": "Interval between pulses (seconds)",
+      "min": 5,
+      "max": 60,
+      "step": 5,
+      "default": 15
+    }
+  ],
+  "presets": [
+    {
+      "name": "Global Pulse"
+    }
+  ]
+}
+{% endschema %}
+
+{% if section.settings.enable %}
+  <script src="{{ 'custom-social-pulse.js' | asset_url }}" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Small delay to ensure the class is loaded if not using a global instance
+      setTimeout(() => {
+        if (window.GlobalPulse) {
+          new GlobalPulse({
+            interval: {{ section.settings.interval | times: 1000 }}
+          });
+        }
+      }, 1000);
+    });
+  </script>
+{% endif %}

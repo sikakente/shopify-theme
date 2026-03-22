@@ -1,0 +1,561 @@
+{{ 'custom-product.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'custom-product.js' | asset_url }}" defer></script>
+
+{%- liquid
+  assign product = product
+  assign current_variant = product.selected_or_first_available_variant
+  assign featured_image = product.featured_image
+-%}
+
+<div class="custom-product-page">
+  <!-- Pre-order Exclusive Access Badge -->
+  <div class="product-exclusive-badge">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+    </svg>
+    <span>Pre-order Exclusive Access</span>
+  </div>
+
+  <!-- Main Product Layout -->
+  <main class="product-main">
+    <!-- Product Gallery -->
+    <div class="product-gallery">
+      <div class="product-gallery__main" data-gallery-main data-open-lightbox>
+        {%- if featured_image != blank -%}
+          <img 
+            class="product-gallery__main-image"
+            src="{{ featured_image | image_url: width: 1200 }}"
+            alt="{{ featured_image.alt | default: product.title | escape }}"
+            width="{{ featured_image.width }}"
+            height="{{ featured_image.height }}"
+            loading="eager"
+          >
+        {%- endif -%}
+      </div>
+
+      {%- if product.images.size > 1 -%}
+        <div class="product-gallery__thumbs">
+          {%- for image in product.images -%}
+            <button 
+              type="button"
+              class="product-gallery__thumb {% if forloop.first %}is-active{% endif %}"
+              data-gallery-thumb
+              data-image-index="{{ forloop.index0 }}"
+              aria-label="View image {{ forloop.index }}"
+            >
+              <img 
+                src="{{ image | image_url: width: 200 }}"
+                alt="{{ image.alt | default: product.title | escape }}"
+                loading="lazy"
+              >
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div class="lightbox" data-lightbox>
+      <button type="button" class="lightbox__close" data-close-lightbox aria-label="Close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      
+      <button type="button" class="lightbox__nav lightbox__nav--prev" data-lightbox-prev aria-label="Previous image">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      
+      <div class="lightbox__content">
+        <img class="lightbox__image" data-lightbox-image src="" alt="">
+      </div>
+      
+      <button type="button" class="lightbox__nav lightbox__nav--next" data-lightbox-next aria-label="Next image">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      <div class="lightbox__counter" data-lightbox-counter></div>
+    </div>
+
+    <!-- Product Info -->
+    <div class="product-info">
+      <!-- Header -->
+      <div class="product-info__header">
+        <h1 class="product-info__title">{{ product.title }}</h1>
+        <p class="product-info__shipping-date">100% Cotton</p>
+        <p class="product-info__tagline">Rep Your Roots. Anywhere. 🇬🇭</p>
+        <div class="product-info__price">
+          <span class="product-info__price-current">
+            {{ current_variant.price | money }}
+          </span>
+          {%- if current_variant.compare_at_price > current_variant.price -%}
+            <span class="product-info__price-badge">Pre-order Price</span>
+          {%- endif -%}
+        </div>
+        <p class="product-info__shipping-date">📦 Delivery: 2 weeks</p>
+      </div>
+
+      <!-- Basket Component -->
+      <div class="product-basket" data-basket-section>
+        <div class="product-basket__header">
+          <h3 class="product-basket__title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            Your Basket
+            <span class="product-basket__count" data-basket-count style="display: none;">0</span>
+          </h3>
+        </div>
+
+        <div class="product-basket__items" data-basket-items></div>
+        
+        <div class="product-basket__empty" data-basket-empty>
+          Select a size below and add to your basket
+        </div>
+
+        <div class="product-basket__subtotal" data-basket-subtotal-row style="display: none;">
+          <span>Subtotal</span>
+          <span data-basket-subtotal>£0.00</span>
+        </div>
+      </div>
+
+      <!-- Size Selector -->
+      <div class="product-sizes">
+        <div class="product-sizes__label">Select Size to Add</div>
+        <div class="product-sizes__options">
+          {%- for variant in product.variants -%}
+            {%- assign size = variant.option1 -%}
+            <button 
+              type="button"
+              class="product-sizes__btn{% unless variant.available %} product-sizes__btn--sold-out{% endunless %}"
+              data-size-btn
+              data-size="{{ size }}"
+              data-variant-id="{{ variant.id }}"
+              data-inventory="{{ variant.inventory_quantity | default: 0 }}"
+              {% unless variant.available %}disabled{% endunless %}
+            >
+              {{ size }}
+              {%- unless variant.available -%}
+                <span class="product-sizes__sold-out-label">Out of Stock</span>
+              {%- endunless -%}
+            </button>
+          {%- endfor -%}
+        </div>
+        <a href="#" class="product-sizes__chart-link" data-open-size-chart>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          View Size Chart
+        </a>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="product-actions">
+        <button 
+          type="button" 
+          class="product-actions__add"
+          data-add-to-basket
+          disabled
+        >
+          Add to Basket
+        </button>
+        <button 
+          type="button" 
+          class="product-actions__buy"
+          data-buy-now
+          disabled
+        >
+          Buy Now
+        </button>
+      </div>
+
+      <!-- Trust Signals -->
+      {% comment %} <div class="product-trust">
+        <div class="product-trust__item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>Shipping to UK & USA Only</span>
+        </div>
+        <a href="#" class="product-trust__item product-trust__item--link" data-open-returns>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+          <span>Refund Policy</span>
+        </a>
+        {% comment %} <div class="product-trust__item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13"/>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/>
+            <circle cx="18.5" cy="18.5" r="2.5"/>
+          </svg>
+          <span>Free Shipping £100+</span>
+        </div> {% endcomment %}
+        <div class="product-trust__item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>Secure Checkout</span>
+        </div>
+      </div> {% endcomment %}
+
+
+      <!-- Product Description (if any) -->
+      {%- if product.description != blank -%}
+        <div class="product-description">
+          {{ product.description }}
+        </div>
+      {%- endif -%}
+
+      <!-- Product Detail Accordion -->
+      <div class="product-accordion" data-product-accordion>
+        <!-- Materials -->
+        <div class="product-accordion__item">
+          <button type="button" class="product-accordion__trigger" aria-expanded="false">
+            <span class="product-accordion__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+            </span>
+            <span class="product-accordion__label">Materials</span>
+            <span class="product-accordion__toggle"></span>
+          </button>
+          <div class="product-accordion__content">
+            <div class="product-accordion__body">
+              {{ section.settings.accordion_materials | default: "100% premium knit cotton. Breathable, soft, and built to last — whether you are in the stands or on the streets." | newline_to_br}}
+            </div>
+          </div>
+        </div>
+
+        <!-- Shipping -->
+        <div class="product-accordion__item">
+          <button type="button" class="product-accordion__trigger" aria-expanded="false">
+            <span class="product-accordion__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"/>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            </span>
+            <span class="product-accordion__label">Shipping</span>
+            <span class="product-accordion__toggle"></span>
+          </button>
+          <div class="product-accordion__content">
+            <div class="product-accordion__body">
+              {{ section.settings.accordion_shipping | default: "We ship to UK, US and Ghana. Delivery takes approximately 4-6 weeks from order. Free shipping on orders over £100 / $100." | newline_to_br }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Returns -->
+        <div class="product-accordion__item">
+          <button type="button" class="product-accordion__trigger" aria-expanded="false">
+            <span class="product-accordion__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+              </svg>
+            </span>
+            <span class="product-accordion__label">Returns</span>
+            <span class="product-accordion__toggle"></span>
+          </button>
+          <div class="product-accordion__content">
+            <div class="product-accordion__body">
+              {{ section.settings.accordion_returns | default: "All sales are final for pre-order items. Exchanges and store credit available within 14 days of delivery. Items must be unworn with tags attached." | newline_to_br}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        // Accordion toggle
+        document.querySelectorAll('[data-product-accordion] .product-accordion__trigger').forEach(function(trigger) {
+          trigger.addEventListener('click', function() {
+            var item = this.closest('.product-accordion__item');
+            var isOpen = item.classList.contains('is-open');
+            // Close all in this accordion
+            item.closest('[data-product-accordion]').querySelectorAll('.product-accordion__item').forEach(function(i) {
+              i.classList.remove('is-open');
+              i.querySelector('.product-accordion__trigger').setAttribute('aria-expanded', 'false');
+            });
+            // Toggle clicked one
+            if (!isOpen) {
+              item.classList.add('is-open');
+              this.setAttribute('aria-expanded', 'true');
+            }
+          });
+        });
+      </script>
+    </div>
+  </main>
+
+  <!-- Size Chart Modal -->
+  <div class="size-chart-modal" data-size-chart-modal>
+    <div class="size-chart-modal__backdrop" data-close-size-chart></div>
+    <div class="size-chart-modal__content">
+      <button type="button" class="size-chart-modal__close" data-close-size-chart aria-label="Close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      
+      <h2 class="size-chart-modal__title">Size Guide</h2>
+      
+      <div class="size-chart-scroll">
+        <table class="size-chart-table">
+          <thead>
+            <tr>
+              <th>Size</th>
+              <th>Chest<br><small>(Relax)</small></th>
+              <th>Shoulder<br><small>(Relax)</small></th>
+              <th>Sleeve<br><small>(Relax)</small></th>
+              <th>Length<br><small>(collar to bottom)</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>XS</td>
+              <td>66cm / 26"</td>
+              <td>67cm / 26⅜"</td>
+              <td>20cm / 7⅞"</td>
+              <td>65cm / 25⅝"</td>
+            </tr>
+            <tr>
+              <td>S</td>
+              <td>68cm / 26¾"</td>
+              <td>69cm / 27⅛"</td>
+              <td>21.5cm / 8½"</td>
+              <td>67cm / 26⅜"</td>
+            </tr>
+            <tr>
+              <td>M</td>
+              <td>70cm / 27½"</td>
+              <td>71cm / 28"</td>
+              <td>23cm / 9"</td>
+              <td>69cm / 27⅛"</td>
+            </tr>
+            <tr>
+              <td>L</td>
+              <td>72cm / 28⅜"</td>
+              <td>73cm / 28¾"</td>
+              <td>24.5cm / 9⅝"</td>
+              <td>71cm / 28"</td>
+            </tr>
+            <tr>
+              <td>XL</td>
+              <td>74cm / 29⅛"</td>
+              <td>75cm / 29½"</td>
+              <td>26cm / 10¼"</td>
+              <td>73cm / 28¾"</td>
+            </tr>
+            <tr>
+              <td>2XL</td>
+              <td>76cm / 29⅞"</td>
+              <td>77cm / 30⅜"</td>
+              <td>27.5cm / 10⅞"</td>
+              <td>75cm / 29½"</td>
+            </tr>
+            <tr>
+              <td>3XL</td>
+              <td>78cm / 30¾"</td>
+              <td>79cm / 31⅛"</td>
+              <td>29cm / 11⅜"</td>
+              <td>77cm / 30⅜"</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="size-chart-modal__tip">
+        <strong>📏 Note:</strong> Allow 1-2 cm (0.4-0.8 in) difference due to manual measurement.
+      </div>
+    </div>
+  </div>
+
+  <!-- Exchange & Return Policy Modal -->
+  <div class="returns-modal" data-returns-modal>
+    <div class="returns-modal__backdrop" data-close-returns></div>
+    <div class="returns-modal__content">
+      <button type="button" class="returns-modal__close" data-close-returns aria-label="Close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      
+      <h2 class="returns-modal__title">Exchange & Return Policy</h2>
+      
+      <div class="returns-modal__body">
+        <div class="returns-section">
+          <h3>All Sales Are Final</h3>
+          <p>Due to the nature of order items, we do not offer refunds or cancellations once an order has been placed. Please double-check all details before completing checkout.</p>
+        </div>
+
+        <div class="returns-section">
+          <h3>Exchanges & Store Credit</h3>
+          <p>If you'd like to exchange your item or receive store credit of equal value, you may do so within <strong>14 days of delivery</strong>. Email us at <a href="mailto:support@kuamacollection.com">support@kuamacollection.com</a> for approval before sending anything back.</p>
+          <p>Returned items must:</p>
+          <ul>
+            <li>Be in new, unworn condition</li>
+            <li>Have all original tags still attached</li>
+            <li>Be shipped back with a valid tracking number</li>
+          </ul>
+          <p>Once received and inspected, a store credit will be issued to your account. Items returned in used or damaged condition will be refused and sent back at the customer's expense.</p>
+        </div>
+
+        <div class="returns-section">
+          <h3>Incorrect or Damaged Items</h3>
+          <p>If you receive the wrong item or your product arrives damaged, please email us within <strong>7 days of delivery</strong> with your order number and clear photos. We'll review and issue an exchange or store credit where appropriate.</p>
+        </div>
+
+        <div class="returns-section">
+          <h3>International Orders</h3>
+          <p>All international orders are shipped Delivered Duties Unpaid (DDU). Customers are responsible for any import duties, taxes, or customs fees due upon delivery. By placing an international order, you acknowledge and agree to these terms.</p>
+        </div>
+
+        <div class="returns-section">
+          <h3>Shipping & Delivery</h3>
+          <p>We ship to <strong>UK and US</strong>. Delivery takes approximately <strong>6-8 weeks</strong> from order. Once shipped, you'll receive tracking details via email.</p>
+        </div>
+
+        <div class="returns-section returns-section--highlight">
+          <p><strong>Questions?</strong> Contact us at <a href="mailto:support@kuamacollection.com">support@kuamacollection.com</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Sticky Buy Bar -->
+
+  <div class="sticky-buy-bar" data-sticky-bar>
+    <div class="sticky-buy-bar__content">
+      <div class="sticky-buy-bar__info">
+        <div class="sticky-buy-bar__thumb">
+          {%- if featured_image != blank -%}
+            <img 
+              src="{{ featured_image | image_url: width: 100 }}"
+              alt="{{ product.title | escape }}"
+            >
+          {%- endif -%}
+        </div>
+        <div class="sticky-buy-bar__details">
+          <span class="sticky-buy-bar__title">{{ product.title }}</span>
+          <span class="sticky-buy-bar__summary" data-sticky-summary>No items selected</span>
+        </div>
+      </div>
+      <button type="button" class="sticky-buy-bar__btn" data-sticky-buy disabled>
+        Buy Now →
+      </button>
+    </div>
+  </div>
+
+  <!-- Product JSON for JS -->
+  <script type="application/json" data-product-json>
+    {
+      "id": {{ product.id }},
+      "title": {{ product.title | json }},
+      "currency": {{ cart.currency.iso_code | json }},
+      "variants": [
+        {%- for variant in product.variants -%}
+          {
+            "id": {{ variant.id }},
+            "title": {{ variant.title | json }},
+            "price": {{ variant.price }},
+            "available": {{ variant.available }},
+            "inventoryQuantity": {% if variant.inventory_management == 'shopify' %}{{ variant.inventory_quantity }}{% else %}999{% endif %},
+            "inventoryPolicy": {{ variant.inventory_policy | json }},
+            "options": {{ variant.options | json }}
+          }{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      ]
+    }
+  </script>
+  <!-- Start of Judge.me code -->{% assign has_legacy = false %}{% if product.metafields.judgeme.widget.size > 20 %}{% assign has_legacy = true %}{% endif %}<div style='clear:both'></div><div id='judgeme_product_reviews' class='jdgm-widget jdgm-review-widget' data-product-title='{{ product.title | escape }}' data-id='{{ product.id }}' data-product-id='{{ product.id }}' data-widget='review' data-auto-install='false' data-shop-reviews-count='{{ shop.metafields.judgeme.shop_reviews_count | default: 0 | escape }}' data-entry-point='review_widget.js' data-entry-key='review-widget/main.js'>{% if has_legacy %}<div class='jdgm-legacy-widget-content' style='display: none;'>{{ product.metafields.judgeme.widget }}</div>{% endif %}</div>{% if product.metafields.judgeme.review_widget_data %}<script>jdgm.data ||= {}; jdgm.data.reviewWidget ||= {}; jdgm.data.reviewWidget[{{ product.id }}] = {{ product.metafields.judgeme.review_widget_data }}</script>{% endif %}<!-- End of Judge.me code -->
+</div>
+
+{% schema %}
+{
+  "name": "Custom Product Page",
+  "tag": "section",
+  "class": "section-custom-product",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Size Chart"
+    },
+    {
+      "type": "richtext",
+      "id": "size_chart_content",
+      "label": "Size Chart HTML",
+      "info": "Custom size chart content (optional)"
+    },
+    {
+      "type": "header",
+      "content": "Trust Signals"
+    },
+    {
+      "type": "text",
+      "id": "trust_shipping",
+      "label": "Shipping Text",
+      "default": "Free UK Shipping"
+    },
+    {
+      "type": "text",
+      "id": "trust_returns",
+      "label": "Returns Text",
+      "default": "30-Day Returns"
+    },
+    {
+      "type": "text",
+      "id": "trust_secure",
+      "label": "Secure Text",
+      "default": "Secure Checkout"
+    },
+    {
+      "type": "header",
+      "content": "Product Details Accordion"
+    },
+    {
+      "type": "textarea",
+      "id": "accordion_materials",
+      "label": "Materials Text",
+      "default": "100% premium knit cotton. Breathable, soft, and built to last — whether you're in the stands or on the streets."
+    },
+    {
+      "type": "textarea",
+      "id": "accordion_shipping",
+      "label": "Shipping Text",
+      "default": "We ship to UK, US & Ghana. Delivery takes approximately 4-6 weeks from order. Free shipping on orders over £100 / $100. You'll receive tracking details via email once shipped."
+    },
+    {
+      "type": "textarea",
+      "id": "accordion_returns",
+      "label": "Returns Text",
+      "default": "All sales are final for pre-order items. Exchanges and store credit available within 14 days of delivery. Items must be unworn with tags attached. Email support@kuamacollection.com for assistance."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Product Page"
+    }
+  ]
+}
+{% endschema %}

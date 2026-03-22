@@ -1,0 +1,28 @@
+{
+  "sections": {
+    "cinematic-hero": {
+      "type": "custom-cinematic-hero",
+      "settings": {
+        "heading": "Crafted for the Modern Man",
+        "subheading": "Premium shirts designed with obsessive attention to fit, fabric, and function. Join the waitlist for early access.",
+        "cta_text": "Join the Waitlist",
+        "text_color": "#ffffff",
+        "enable_mobile": false
+      }
+    },
+    "waitlist-modal": {
+      "type": "custom-waitlist-modal",
+      "settings": {
+        "button_text": "Join the Waitlist",
+        "modal_headline": "Get Early Access",
+        "modal_subheadline": "Be the first to know when we launch and receive exclusive member pricing.",
+        "show_shirt_type": true,
+        "show_size": true
+      }
+    }
+  },
+  "order": [
+    "cinematic-hero",
+    "waitlist-modal"
+  ]
+}

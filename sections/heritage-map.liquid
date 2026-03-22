@@ -1,0 +1,385 @@
+{%- style -%}
+  .heritage-map {
+    position: relative;
+    background-color: #050505;
+    padding: 120px 24px;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  .heritage-map__inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .heritage-map__header {
+    text-align: center;
+    margin-bottom: 60px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .heritage-map__heading {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .heritage-map__subheading {
+    font-size: 1.25rem;
+    opacity: 0.6;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .heritage-map__container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2/1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+  }
+
+  .heritage-map__svg-wrapper {
+     position: relative;
+     z-index: 2;
+     width: 100%;
+     height: 100%;
+     display: flex;
+     align-items: center;
+     justify-content: center; /* This centers horizontally */
+     padding: 20px;
+  }
+
+  .heritage-map__svg {
+    width: 100%;
+    height: auto;
+    max-height: 85vh;
+    display: block;
+    margin: 0 auto;
+    margin-left: 15%; /* Shift map further to the right */
+    filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+  }
+
+  /* Default state for all countries in the new map */
+  .heritage-map__svg path {
+    fill: #1a1a1a;
+    stroke: #333;
+    stroke-width: 0.5;
+    transition: all 0.4s ease;
+    cursor: default; /* Most countries aren't interactive */
+  }
+
+  /* Interactive states for our specific focus countries */
+  {% for block in section.blocks %}
+    {% assign code = block.settings.country_code | downcase %}
+    
+    /* Target the specific ID from the SVG (e.g., #ng, #us) */
+    .heritage-map__svg path#{{ code }} {
+      cursor: pointer;
+      fill: {{ block.settings.glow_color | rgba_to_hex: 0.15 }};
+      stroke: {{ block.settings.glow_color | rgba_to_hex: 0.5 }};
+      stroke-width: 1.5;
+    }
+
+    @keyframes pulse-real-{{ code }} {
+      0% { fill: {{ block.settings.glow_color | rgba_to_hex: 0.15 }}; stroke-opacity: 0.5; }
+      50% { fill: {{ block.settings.glow_color | rgba_to_hex: 0.4 }}; stroke-opacity: 1; filter: drop-shadow(0 0 10px {{ block.settings.glow_color }}); }
+      100% { fill: {{ block.settings.glow_color | rgba_to_hex: 0.15 }}; stroke-opacity: 0.5; }
+    }
+
+    .heritage-map__svg path#{{ code }} {
+      animation: pulse-real-{{ code }} 3s infinite ease-in-out;
+      animation-delay: {{ forloop.index0 | times: 300 | append: 'ms' }};
+    }
+
+    .heritage-map__svg path#{{ code }}:hover {
+       fill: {{ block.settings.glow_color }};
+       stroke: #fff;
+       stroke-width: 2;
+       filter: drop-shadow(0 0 20px {{ block.settings.glow_color }});
+       transform: scale(1.01); /* Subtle pop */
+       transform-origin: center; 
+    }
+  {% endfor %}
+
+  /* Tooltip logic */
+  .heritage-map__tooltip {
+    position: fixed;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 16px 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -120%) scale(0.9);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 2000;
+  }
+
+  .heritage-map__tooltip.is-active {
+    opacity: 1;
+    transform: translate(-50%, -120%) scale(1);
+  }
+
+  /* Specific Mobile Tooltip overrides */
+  @media (max-width: 767px) {
+    .heritage-map__tooltip {
+      bottom: 20px;
+      top: auto !important;
+      left: 50% !important;
+      width: 90%;
+      max-width: 400px;
+      transform: translate(-50%, 0) scale(0.9);
+      text-align: center;
+    }
+    .heritage-map__tooltip.is-active {
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+
+  .tooltip-country {
+    font-weight: 600;
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+    color: #fff;
+  }
+
+  .tooltip-hint {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #fff;
+  }
+
+  @media (max-width: 767px) {
+    .heritage-map {
+      padding: 40px 0 80px; /* Remove horizontal padding */
+    }
+    .heritage-map__header {
+      padding: 0 16px;
+    }
+    .heritage-map__container {
+      aspect-ratio: auto;
+      min-height: 300px;
+      overflow-x: auto; /* Enable horizontal scroll */
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+      scrollbar-width: none; /* Hide scrollbar Firefox */
+      -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
+    }
+    .heritage-map__container::-webkit-scrollbar {
+      display: none; /* Hide scrollbar Chrome/Safari */
+    }
+    .heritage-map__svg-wrapper {
+      padding: 10px 0;
+      width: 180%; /* Make wrapper wider than screen */
+      min-width: 600px;
+    }
+    .heritage-map__svg {
+       width: 100%;
+       max-width: none;
+       max-height: none;
+       height: auto;
+       margin-left: 0;
+       transform: none;
+    }
+    /* Scroll hint indicator */
+    .heritage-map__container::after {
+      content: '← Scroll to explore →';
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      pointer-events: none;
+    }
+  }
+{%- endstyle -%}
+
+<section class="heritage-map" id="heritage-map-{{ section.id }}">
+  <div class="heritage-map__inner">
+    <div class="heritage-map__header">
+      <h2 class="heritage-map__heading">{{ section.settings.heading }}</h2>
+      <p class="heritage-map__subheading">{{ section.settings.subheading }}</p>
+    </div>
+
+    <div class="heritage-map__container">
+      <div class="heritage-map__svg-wrapper">
+         {% render 'svg-world-map' %}
+      </div>
+      
+      <div class="heritage-map__tooltip" data-map-tooltip>
+        <span class="tooltip-country"></span>
+        <span class="tooltip-hint">Tap to Rep This Root</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (function() {
+    const section = document.querySelector('#heritage-map-{{ section.id }}');
+    if (!section) return;
+
+    const tooltip = section.querySelector('[data-map-tooltip]');
+    const tooltipCountry = tooltip.querySelector('.tooltip-country');
+    // Select only paths that have an ID matching our blocks
+    const focusPaths = section.querySelectorAll('.heritage-map__svg path[id]');
+    
+    function showTooltip(path, x, y) {
+      // Highcharts SVG stores name in a <name> child tag or we can fallback to config
+      let name = '';
+      const nameTag = path.querySelector('name');
+      if (nameTag) {
+        name = nameTag.textContent;
+      } else {
+         // Fallback: Check if we have a block for this ID
+         // This is a bit manual but robust
+         {% for block in section.blocks %}
+           if(path.id === '{{ block.settings.country_code | downcase }}') name = '{{ block.settings.heading | default: block.settings.country_code | upcase }}';
+         {% endfor %}
+      }
+      
+      if (!name) return;
+      
+      tooltipCountry.textContent = name;
+      tooltip.classList.add('is-active');
+
+      if (window.innerWidth > 767) {
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+      }
+    }
+
+    focusPaths.forEach(path => {
+      // Only attach listeners if this path corresponds to a block
+      let isFocus = false;
+      {% for block in section.blocks %}
+        if(path.id === '{{ block.settings.country_code | downcase }}') isFocus = true;
+      {% endfor %}
+
+      if (!isFocus) return;
+
+      path.addEventListener('mouseenter', (e) => {
+        if (window.innerWidth > 767) {
+           showTooltip(path, e.clientX, e.clientY);
+        }
+      });
+
+      path.addEventListener('mousemove', (e) => {
+        if (window.innerWidth > 767) {
+          tooltip.style.left = e.clientX + 'px';
+          tooltip.style.top = e.clientY + 'px';
+        }
+      });
+
+      path.addEventListener('mouseleave', () => {
+        if (window.innerWidth > 767) {
+          tooltip.classList.remove('is-active');
+        }
+      });
+
+      // Mobile Tap Support
+      path.addEventListener('click', (e) => {
+        if (window.innerWidth <= 767) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          let name = '';
+          const nameTag = path.querySelector('name');
+          if (nameTag) {
+             name = nameTag.textContent;
+          } else {
+             {% for block in section.blocks %}
+               if(path.id === '{{ block.settings.country_code | downcase }}') name = '{{ block.settings.heading | default: block.settings.country_code | upcase }}';
+             {% endfor %}
+          }
+
+          // If tooltip is already showing this country, trigger action
+          if (tooltip.classList.contains('is-active') && tooltipCountry.textContent === name) {
+             const waitlistTrigger = document.querySelector('[data-waitlist-trigger]');
+             if (waitlistTrigger) waitlistTrigger.click();
+          } else {
+             showTooltip(path, 0, 0);
+          }
+        } else {
+          // Desktop click always triggers waitlist if it's a focus country
+          const waitlistTrigger = document.querySelector('[data-waitlist-trigger]');
+          if (waitlistTrigger) waitlistTrigger.click();
+        }
+      });
+    });
+
+    // Close tooltip on click outside
+    document.addEventListener('click', (e) => {
+       if (!section.contains(e.target)) {
+          tooltip.classList.remove('is-active');
+       }
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Heritage Map",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "A Global Identity."
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Our roots span across borders. Find yours on the map."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "country_highlight",
+      "name": "Country Highlight",
+      "settings": [
+        {
+          "type": "text",
+          "id": "country_code",
+          "label": "ISO Country Code (e.g. GH, NG, GB)",
+          "info": "Should match the SVG data-country-code attribute"
+        },
+        {
+          "type": "color",
+          "id": "glow_color",
+          "label": "Glow Color",
+          "default": "#FFC107"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Heritage Map",
+      "blocks": [
+        { "type": "country_highlight", "settings": { "country_code": "GH", "glow_color": "#FFC107" } },
+        { "type": "country_highlight", "settings": { "country_code": "NG", "glow_color": "#008751" } },
+        { "type": "country_highlight", "settings": { "country_code": "GB", "glow_color": "#FFFFFF" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

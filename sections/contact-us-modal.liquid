@@ -1,0 +1,453 @@
+{%- liquid
+  assign button_text = section.settings.button_text
+  assign modal_headline = section.settings.modal_headline
+  assign modal_subheadline = section.settings.modal_subheadline
+  assign success_message_head = section.settings.success_message_head
+  assign success_message_body = section.settings.success_message_body
+-%}
+
+{%- style -%}
+  /* Reuse Custom Waitlist Modal Styles for Consistency */
+  .contact-modal {
+    --modal-bg: rgba(20, 20, 20, 0.98);
+    --modal-card-bg: #1a1a1a;
+    --modal-text: #ffffff;
+    --modal-accent: #3b82f6;
+    --modal-border: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Modal Overlay */
+  .contact-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000; /* Higher than waitlist modal */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .contact-modal[open] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .contact-modal__backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: -1;
+  }
+
+  .contact-modal__content {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background: var(--modal-card-bg);
+    border: 1px solid var(--modal-border);
+    border-radius: 24px;
+    padding: 48px 40px;
+    color: var(--modal-text);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .contact-modal[open] .contact-modal__content {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .contact-modal__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--modal-text);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+  }
+
+  .contact-modal__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .contact-modal__header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .contact-modal__headline {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+
+  .contact-modal__subheadline {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin: 0;
+  }
+
+  /* Form Styles */
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .contact-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .contact-form__label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+  }
+
+  .contact-form__input,
+  .contact-form__textarea {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 1rem;
+    color: var(--modal-text);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--modal-border);
+    border-radius: 12px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    font-family: inherit;
+  }
+
+  .contact-form__textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .contact-form__input:focus,
+  .contact-form__textarea:focus {
+    outline: none;
+    border-color: var(--modal-accent);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .contact-form__submit {
+    margin-top: 8px;
+    padding: 18px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #000;
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+    width: 100%;
+  }
+
+  .contact-form__submit:hover {
+    background: #ffffff;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .contact-form__submit:active {
+    transform: scale(0.98);
+  }
+
+  /* Success State */
+  .contact-success {
+    text-align: center;
+    padding: 20px 0;
+  }
+  
+  .contact-success__icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+
+  @media (max-width: 767px) {
+    .contact-modal__backdrop {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: rgba(10, 10, 10, 0.95);
+    }
+
+    .contact-modal__content {
+      padding: 40px 24px;
+      margin: 20px;
+      max-width: calc(100% - 40px);
+    }
+  }
+{%- endstyle -%}
+
+<div 
+  class="contact-modal" 
+  id="contact-modal-{{ section.id }}"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="contact-headline-{{ section.id }}"
+  data-contact-modal
+>
+  <div class="contact-modal__backdrop" data-modal-close></div>
+
+  <div class="contact-modal__content">
+    <button 
+      class="contact-modal__close" 
+      type="button" 
+      aria-label="Close modal"
+      data-modal-close
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <!-- Contact Form (Power Automate) -->
+    <form class="contact-form" id="contact-form-{{ section.id }}" data-contact-form>
+      <div class="contact-modal__header">
+        <h2 class="contact-modal__headline" id="contact-headline-{{ section.id }}">
+          {{ modal_headline }}
+        </h2>
+        {%- if modal_subheadline != blank -%}
+          <p class="contact-modal__subheadline">{{ modal_subheadline }}</p>
+        {%- endif -%}
+      </div>
+
+      <div class="contact-form__field">
+        <label class="contact-form__label" for="ContactForm-name-{{ section.id }}">Name</label>
+        <input
+          class="contact-form__input"
+          autocomplete="name"
+          type="text"
+          id="ContactForm-name-{{ section.id }}"
+          name="name"
+          placeholder="Your name"
+          required
+        >
+      </div>
+
+      <div class="contact-form__field">
+        <label class="contact-form__label" for="ContactForm-email-{{ section.id }}">Email</label>
+        <input
+          autocomplete="email"
+          type="email"
+          id="ContactForm-email-{{ section.id }}"
+          class="contact-form__input"
+          name="email"
+          spellcheck="false"
+          autocapitalize="off"
+          placeholder="your@email.com"
+          required
+        >
+      </div>
+
+      <div class="contact-form__field">
+        <label class="contact-form__label" for="ContactForm-body-{{ section.id }}">Message</label>
+        <textarea
+          id="ContactForm-body-{{ section.id }}"
+          class="contact-form__textarea"
+          name="message"
+          placeholder="How can we help?"
+          required
+        ></textarea>
+      </div>
+
+      <button type="submit" class="contact-form__submit">
+        {{ button_text }}
+      </button>
+    </form>
+
+    <!-- Success State -->
+    <div class="contact-success" data-contact-success style="display: none;">
+      <div class="contact-success__icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      </div>
+      <h2 class="contact-modal__headline">{{ success_message_head }}</h2>
+      <p class="contact-modal__subheadline">{{ success_message_body }}</p>
+      <p class="contact-modal__subheadline" style="opacity: 0.7; font-size: 0.85em; margin-top: 8px;">
+        📧 Don't see our email? Check your spam or junk folder.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('contact-modal-{{ section.id }}');
+    const closeButtons = modal.querySelectorAll('[data-modal-close]');
+    const form = modal.querySelector('[data-contact-form]');
+    const successState = modal.querySelector('[data-contact-success]');
+    
+    // Power Automate URL (same as waitlist)
+    const POWER_AUTOMATE_URL = 'https://default1a502e01f4fb42c8be625f97264900.89.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/17d4dd2a91144cd1b8e8f06a6ebe8bb6/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=f6jYG0SjHRyD8n3ekp6fJZj0jcqkwGnYQpG-LwR478E';
+
+    // Open modal listener
+    document.addEventListener('open-contact-modal', () => {
+      document.body.style.overflow = 'hidden';
+      modal.showModal ? modal.showModal() : modal.setAttribute('open', '');
+    });
+
+    function closeModal() {
+      document.body.style.overflow = '';
+      modal.close ? modal.close() : modal.removeAttribute('open');
+      
+      // Reset form after close
+      setTimeout(() => {
+        if (form) {
+          form.reset();
+          form.style.display = '';
+        }
+        if (successState) {
+          successState.style.display = 'none';
+        }
+      }, 300);
+    }
+
+    closeButtons.forEach(btn => btn.addEventListener('click', closeModal));
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.hasAttribute('open')) closeModal();
+    });
+
+    // Form submission handler
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = form.querySelector('.contact-form__submit');
+        const originalText = submitBtn.textContent;
+        
+        // Disable button and show loading
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+        
+        // Get form data
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Build payload for Power Automate
+        const payload = {
+          formType: 'contact',
+          email: data.email || '',
+          name: data.name || '',
+          country: '',
+          size: '',
+          selections: '',
+          vision: '',
+          message: data.message || '',
+          timestamp: new Date().toISOString()
+        };
+        
+        try {
+
+          
+          const response = await fetch(POWER_AUTOMATE_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+          
+
+          
+          if (!response.ok) {
+            throw new Error('Submission failed');
+          }
+          
+          // Show success state
+          form.style.display = 'none';
+          successState.style.display = 'block';
+          
+        } catch (error) {
+          console.error('Contact form submission error:', error);
+          // If CORS error, request may still have gone through
+          if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+            form.style.display = 'none';
+            successState.style.display = 'block';
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+            alert('Submission failed. Please try again.');
+          }
+        }
+      });
+    }
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Contact Us Modal",
+  "settings": [
+    {
+      "type": "text",
+      "id": "modal_headline",
+      "label": "Headline",
+      "default": "Get in Touch"
+    },
+    {
+      "type": "text",
+      "id": "modal_subheadline",
+      "label": "Subheadline",
+      "default": "Have a question? Send us a message."
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Send Message"
+    },
+    {
+      "type": "text",
+      "id": "success_message_head",
+      "label": "Success Headline",
+      "default": "Message Sent"
+    },
+    {
+      "type": "text",
+      "id": "success_message_body",
+      "label": "Success Body",
+      "default": "We'll get back to you as soon as possible."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Contact Us Modal"
+    }
+  ]
+}
+{% endschema %}

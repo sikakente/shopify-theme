@@ -1,0 +1,959 @@
+{%- liquid
+  assign heading = section.settings.heading
+  assign subheading = section.settings.subheading
+  assign button_text = section.settings.button_text
+  assign logo = section.settings.logo
+-%}
+
+{%- style -%}
+  .story-cta {
+    position: relative;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    padding: 80px 24px;
+    text-align: center;
+  }
+
+  .story-cta__content {
+    max-width: 600px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .story-cta__logo {
+    max-width: 150px;
+    height: auto;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .story-cta__heading {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin: 0;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .story-cta__subheading {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .story-cta__pricing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .story-cta__price-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .story-cta__price-original {
+    font-size: 1.25rem;
+    color: rgba(255,255,255,0.4);
+    text-decoration: line-through;
+    position: relative;
+  }
+
+  .story-cta__price-current {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  .story-cta__price-label {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .story-cta__price-label--from {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  .story-cta__scarcity {
+    font-size: 0.85rem;
+    color: #FFC107;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .story-cta.is-visible .story-cta__pricing {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.8s ease 0.5s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+  }
+
+  .story-cta.is-visible .story-cta__scarcity {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.8s ease 0.6s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s;
+  }
+
+  .story-cta__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .story-cta__button {
+    padding: 20px 56px;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #000;
+    background: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 30px rgba(255, 255, 255, 0.2);
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, box-shadow 0.3s ease;
+    min-width: 250px;
+  }
+
+  @media (max-width: 767px) {
+    .story-cta__button {
+      padding: 16px 32px; /* Smaller mobile padding */
+      min-width: 200px;
+      font-size: 0.9rem;
+    }
+
+    .story-cta__button--secondary {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: #000; /* Solid fallback */
+    }
+  }
+
+  .story-cta__button--secondary {
+    background: rgba(0, 0, 0, 0.85); /* Dark, readable background */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .story-cta__button--secondary:hover {
+    background: #000;
+    border-color: #fff;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .story-cta__button--preorder {
+    background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%);
+    color: #000;
+    border: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 30px rgba(212, 175, 55, 0.3);
+  }
+
+  .story-cta__button--preorder:hover {
+    background: linear-gradient(135deg, #e5c349 0%, #d4af37 100%);
+    box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .story-cta__contact-row {
+    margin-top: 16px;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .story-cta.is-visible .story-cta__contact-row {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.8s ease 0.4s, transform 0.8s ease 0.4s;
+  }
+
+  .story-cta__button--contact {
+    padding: 14px 40px;
+    font-size: 0.9rem;
+    min-width: 180px;
+  }
+
+  /* Hidden state: below the viewport, invisible */
+  .story-cta__actions.is-hidden {
+    position: fixed !important;
+    bottom: -100px !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    width: fit-content !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: 1000 !important;
+  }
+
+  /* Floating state: visible at bottom center */
+  .story-cta__actions.is-floating {
+    position: fixed !important;
+    bottom: 30px !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    width: fit-content !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 1000 !important;
+    /* On mobile, stack vertically or keep mostly hidden/simplified if needed, but flex-wrap handles basic stacking */
+    padding: 0 16px;
+  }
+
+  /* Locked state: back in normal document flow */
+  .story-cta__actions.is-locked {
+    position: static !important;
+    margin: 0 auto !important;
+    width: fit-content !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .story-cta__button:hover {
+    background: #f0f0f0;
+    box-shadow: 0 8px 40px rgba(255, 255, 255, 0.3);
+  }
+
+  .story-cta.is-visible .story-cta__actions {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s;
+  }
+
+  .story-cta__footer {
+    margin-top: 40px;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.4);
+    opacity: 0;
+  }
+
+  /* Animations */
+  .story-cta.is-visible .story-cta__logo {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .story-cta.is-visible .story-cta__heading {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.8s ease 0.1s, transform 0.8s ease 0.1s;
+  }
+
+  .story-cta.is-visible .story-cta__subheading {
+    opacity: 0.7;
+    transform: translateY(0);
+    transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
+  }
+
+  .story-cta.is-visible .story-cta__actions {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s;
+  }
+
+  .story-cta.is-visible .story-cta__footer {
+    opacity: 1;
+    transition: opacity 0.8s ease 0.5s;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .story-cta__logo,
+    .story-cta__heading,
+    .story-cta__subheading,
+    .story-cta__actions,
+    .story-cta__footer {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+  /* ===================================
+     PRE-ORDER MODAL STYLES
+     =================================== */
+
+  /* Modal Overlay */
+  .waitlist-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    /* Variables */
+    --modal-bg: rgba(0, 0, 0, 0.85);
+    --modal-card-bg: #111;
+    --modal-border: rgba(255, 255, 255, 0.15);
+    --modal-text: #fff;
+    --modal-accent: #e8d5a3;
+  }
+
+  .waitlist-modal.is-visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .waitlist-modal__backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: -1;
+  }
+
+  .waitlist-modal__content {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+    background: var(--modal-card-bg);
+    border: 1px solid var(--modal-border);
+    border-radius: 24px;
+    padding: 48px 40px;
+    color: var(--modal-text);
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  }
+
+  .waitlist-modal.is-visible .waitlist-modal__content {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .waitlist-modal__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--modal-text);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+    z-index: 10;
+  }
+
+  .waitlist-modal__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Option Picker */
+  .option-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .option-picker__header {
+    text-align: center;
+    margin-bottom: 0;
+  }
+
+  .option-picker__title {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+    color: #fff;
+  }
+
+  .option-picker__subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+  }
+
+  .option-picker__cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 767px) {
+    .option-picker__cards {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Option Card */
+  .option-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 36px 28px;
+    border-radius: 24px;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    min-height: 320px;
+    transition: all 0.3s ease;
+  }
+
+  .option-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .option-card__label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 12px;
+  }
+
+  .option-card--customize .option-card__label {
+    color: rgba(232, 213, 163, 0.8);
+  }
+
+  .option-card__title {
+    font-size: 1.35rem;
+    font-weight: 500;
+    margin: 0 0 10px;
+    color: #fff;
+  }
+
+  .option-card__description {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.55);
+    min-height: 48px;
+  }
+
+  .option-card__pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 24px;
+    margin-bottom: 20px;
+  }
+
+  .option-card__price-original {
+    font-size: 0.95rem;
+    text-decoration: line-through;
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .option-card__price-current {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .option-card__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: #fff;
+  }
+
+  .option-card:hover .option-card__cta {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .option-card--customize .option-card__cta {
+    background: rgba(232, 213, 163, 0.12);
+    border-color: rgba(232, 213, 163, 0.3);
+    color: #e8d5a3;
+  }
+
+  .option-card--customize .option-card__cta:hover {
+    background: rgba(232, 213, 163, 0.2);
+    border-color: rgba(232, 213, 163, 0.45);
+  }
+{%- endstyle -%}
+
+
+<section 
+  class="story-cta"
+  id="story-cta-{{ section.id }}"
+  data-story-section
+>
+  <div class="story-cta__content">
+    {%- if logo != blank -%}
+      <img 
+        class="story-cta__logo"
+        src="{{ logo | image_url: width: 300 }}"
+        alt="{{ shop.name }}"
+      >
+    {%- endif -%}
+
+    {%- if heading != blank -%}
+      <h2 class="story-cta__heading">{{ heading }}</h2>
+    {%- endif -%}
+
+    {%- if subheading != blank -%}
+      <p class="story-cta__subheading">{{ subheading }}</p>
+    {%- endif -%}
+
+    {%- comment -%}
+    {%- if section.settings.show_pricing -%}
+    <div class="story-cta__pricing" data-price-container data-base-price="69.99">
+      <div class="story-cta__price-row">
+        <span class="story-cta__price-label story-cta__price-label--from">From</span>
+        <span class="story-cta__price-current" data-price-display>{{ section.settings.current_price }}</span>
+      </div>
+      <span class="story-cta__price-label">{{ section.settings.price_label }}</span>
+    </div>
+    {%- endif -%}
+    {%- endcomment -%}
+
+    {%- if section.settings.scarcity_text != blank -%}
+    <p class="story-cta__scarcity">{{ section.settings.scarcity_text }}</p>
+    {%- endif -%}
+
+    <div class="story-cta__actions is-floating" data-cta-actions>
+      <button 
+        class="story-cta__button" 
+        type="button"
+        data-waitlist-trigger
+        data-direct-screen="standard"
+      >
+        {{ button_text | default: 'Join the Waitlist' }}
+      </button>
+
+      <button 
+        type="button"
+        class="story-cta__button story-cta__button--preorder"
+        data-preorder-trigger
+      >
+        {{ section.settings.preorder_button_text | default: 'Pre-Order Now' }}
+      </button>
+
+    </div>
+
+
+    {%- if section.settings.show_contact -%}
+      <div class="story-cta__contact-row">
+        <button 
+          class="story-cta__button story-cta__button--secondary story-cta__button--contact" 
+          type="button"
+          data-contact-trigger
+        >
+          {{ section.settings.contact_button_text | default: 'Contact Us' }}
+        </button>
+      </div>
+    {%- endif -%}
+
+    <p class="story-cta__footer">© {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.</p>
+
+  </div>
+</section>
+
+
+<!-- Pre-Order Modal -->
+<div 
+  class="waitlist-modal custom-waitlist-modal" 
+  id="preorder-modal"
+  role="dialog"
+  aria-modal="true"
+  style="display: none; visibility: hidden; opacity: 0;"
+>
+  <div class="waitlist-modal__backdrop" data-preorder-close></div>
+
+  <div class="waitlist-modal__content">
+    <button 
+      class="waitlist-modal__close" 
+      type="button" 
+      aria-label="Close modal"
+      data-preorder-close
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <div class="option-picker">
+      <div class="option-picker__header">
+        <h2 class="option-picker__title">Pre-Order Your Jersey</h2>
+        <p class="option-picker__subtitle">Select which edition you'd like to secure</p>
+      </div>
+
+      <div class="option-picker__cards">
+        <!-- Standard Option -->
+        <a href="{{ section.settings.preorder_button_url | default: '/products/ghana-premium-knit-fan-jersey' }}" class="option-card" style="text-decoration: none;">
+          <span class="option-card__label">Collection</span>
+          <h3 class="option-card__title">Standard Edition</h3>
+          <p class="option-card__description">The official Ghana knit jersey. Premium quality, authentic details. 100% Cotton</p>
+          <div class="option-card__pricing">
+            <span class="option-card__price-current" data-price-convert="65.00">£65.00</span>
+          </div>
+          <span class="option-card__cta">Pre-order Standard</span>
+        </a>
+
+        <!-- Customize Option -->
+        <a href="{{ section.settings.bespoke_product_url | default: '#' }}" class="option-card option-card--customize" style="text-decoration: none;">
+          <span class="option-card__label">Customized</span>
+          <h3 class="option-card__title">Custom Edition</h3>
+          <p class="option-card__description">Customise your Ghana Knit Cultural Piece with your Name and Number. Tailored exclusively for you.</p>
+          <div class="option-card__pricing">
+            <span class="option-card__price-current" style="color: #e8d5a3;" data-price-convert="150.00">£150.00</span>
+          </div>
+          <span class="option-card__cta">Pre-order Bespoke</span>
+        </a>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const section = document.querySelector('#story-cta-{{ section.id }}');
+  const actionsContainer = document.querySelector('[data-cta-actions]');
+  
+  if (!section || !actionsContainer) return;
+
+  function updateButtonState() {
+    const sectionRect = section.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    // Lock when section is visible
+    const sectionVisible = sectionRect.top < viewportHeight * 0.7;
+
+    // Remove all state classes first
+    actionsContainer.classList.remove('is-hidden', 'is-floating', 'is-locked');
+
+    if (sectionVisible) {
+      // At section - lock in place (normal document flow)
+      actionsContainer.classList.add('is-locked');
+    } else {
+      // Everywhere else - float at bottom
+      actionsContainer.classList.add('is-floating');
+    }
+  }
+
+  // Trigger contact modal
+  const contactBtn = section.querySelector('[data-contact-trigger]');
+  if (contactBtn) {
+    contactBtn.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('open-contact-modal'));
+    });
+  }
+
+  window.addEventListener('scroll', updateButtonState, { passive: true });
+  updateButtonState();
+
+  // Pre-Order Modal Logic
+  const preorderModal = document.getElementById('preorder-modal');
+  const preorderTriggers = document.querySelectorAll('[data-preorder-trigger]');
+  const preorderClose = document.querySelectorAll('[data-preorder-close]');
+
+  function openPreorderModal() {
+    if (!preorderModal) return;
+    preorderModal.style.display = 'flex';
+    // Small delay to allow display:flex to apply before opacity transition
+    requestAnimationFrame(() => {
+      preorderModal.style.visibility = 'visible';
+      preorderModal.style.opacity = '1';
+      preorderModal.classList.add('is-visible'); // For CSS hooks if needed
+    });
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+
+  function closePreorderModal() {
+    if (!preorderModal) return;
+    preorderModal.style.opacity = '0';
+    preorderModal.style.visibility = 'hidden';
+    preorderModal.classList.remove('is-visible');
+    setTimeout(() => {
+      preorderModal.style.display = 'none';
+      document.body.style.overflow = '';
+    }, 300); // Match transition duration
+  }
+
+  preorderTriggers.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openPreorderModal();
+    });
+  });
+
+  preorderClose.forEach(btn => {
+    btn.addEventListener('click', closePreorderModal);
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && preorderModal.style.display === 'flex') {
+      closePreorderModal();
+    }
+  });
+
+  // Currency conversion for World Cup countries + Nigeria
+  (function initCurrencyConversion() {
+
+    const priceElements = document.querySelectorAll('[data-price-convert]');
+    if (priceElements.length === 0) return;
+
+    // Country to currency code mapping (World Cup 2026 + Nigeria)
+    const countryToCurrency = {
+      'GB': 'GBP', 'DE': 'EUR', 'FR': 'EUR', 'ES': 'EUR', 'NL': 'EUR',
+      'BE': 'EUR', 'PT': 'EUR', 'IT': 'EUR', 'US': 'USD', 'CA': 'CAD',
+      'MX': 'MXN', 'AR': 'ARS', 'BR': 'BRL', 'JP': 'JPY', 'KR': 'KRW',
+      'SA': 'SAR', 'MA': 'MAD', 'SN': 'XOF', 'CM': 'XAF', 'GH': 'GHS',
+      'NG': 'NGN', 'AU': 'AUD'
+    };
+
+    // Currency symbols
+    const currencySymbols = {
+      'GBP': '£', 'EUR': '€', 'USD': '$', 'CAD': 'C$', 'MXN': '$',
+      'ARS': '$', 'BRL': 'R$', 'JPY': '¥', 'KRW': '₩', 'SAR': '﷼',
+      'MAD': 'د.م.', 'XOF': 'CFA ', 'XAF': 'CFA ', 'GHS': '₵', 'NGN': '₦',
+      'AUD': 'A$'
+    };
+
+    function formatPrice(amount, currencyCode) {
+      const symbol = currencySymbols[currencyCode] || '£';
+      
+      // Round based on currency value
+      let formatted;
+      if (['JPY', 'KRW', 'XOF', 'XAF', 'NGN', 'ARS'].includes(currencyCode)) {
+        // Large value currencies - round to nearest 100 or 1000
+        const rounded = amount > 10000 
+          ? Math.round(amount / 1000) * 1000 
+          : Math.round(amount / 100) * 100;
+        formatted = symbol + rounded.toLocaleString();
+      } else {
+        // Standard currencies - use .99 pricing
+        const rounded = Math.floor(amount) + 0.99;
+        formatted = symbol + rounded.toFixed(2);
+      }
+      
+      return formatted;
+    }
+
+    async function getExchangeRates() {
+      try {
+        // Free API - no key required, updates daily
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/GBP');
+        const data = await response.json();
+        return data.rates;
+      } catch (error) {
+        console.warn('Exchange rate API failed, using fallback rates');
+        // Fallback rates if API fails
+        return {
+          GBP: 1, EUR: 1.17, USD: 1.27, CAD: 1.72, MXN: 21.8,
+          ARS: 1140, BRL: 6.20, JPY: 195, KRW: 1680, SAR: 4.76,
+          MAD: 12.6, XOF: 770, XAF: 770, GHS: 15.8, NGN: 1980, AUD: 1.95
+        };
+      }
+    }
+
+    async function init() {
+      try {
+        // Get visitor's country
+        const geoResponse = await fetch('https://ipapi.co/json/');
+        const geoData = await geoResponse.json();
+        const countryCode = geoData.country_code || 'GB';
+        
+        // Get currency for this country
+        const currencyCode = countryToCurrency[countryCode] || 'GBP';
+        
+        // If UK, no conversion needed (but ensure formatting)
+        if (currencyCode === 'GBP') {
+          return; 
+        }
+        
+        // Get live exchange rates
+        const rates = await getExchangeRates();
+        const rate = rates[currencyCode] || 1;
+        
+        // Convert and display for all elements
+        priceElements.forEach(el => {
+          const basePrice = parseFloat(el.getAttribute('data-price-convert'));
+          if (!isNaN(basePrice)) {
+            const convertedPrice = basePrice * rate;
+            el.textContent = formatPrice(convertedPrice, currencyCode);
+          }
+        });
+        
+      } catch (error) {
+        console.warn('Currency conversion failed:', error);
+      }
+    }
+
+    init();
+  })();
+
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Story: CTA",
+  "tag": "section",
+  "class": "section-story-cta",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo",
+      "info": "Your brand logo (optional)"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Be First."
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Join the waitlist and get exclusive early access to our launch collection."
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Join the Waitlist"
+    },
+    {
+      "type": "header",
+      "content": "Pre-Order Button"
+    },
+    {
+      "type": "text",
+      "id": "preorder_button_text",
+      "label": "Pre-Order Button Text",
+      "default": "Pre-Order Now"
+    },
+    {
+      "type": "url",
+      "id": "preorder_button_url",
+      "label": "Pre-Order Button URL (Standard)",
+      "info": "Link to the Standard Edition product page"
+    },
+    {
+      "type": "url",
+      "id": "bespoke_product_url",
+      "label": "Bespoke Product URL",
+      "info": "Link to the Bespoke Edition product page"
+    },
+    {
+      "type": "header",
+      "content": "Contact Button"
+
+    },
+    {
+      "type": "checkbox",
+      "id": "show_contact",
+      "label": "Show Contact Button",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "contact_button_text",
+      "label": "Contact Button Text",
+      "default": "Contact Us"
+    },
+    {
+      "type": "header",
+      "content": "Pricing"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pricing",
+      "label": "Show Pricing",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "original_price",
+      "label": "Original Price",
+      "default": "£99.99"
+    },
+    {
+      "type": "text",
+      "id": "current_price",
+      "label": "Current Price",
+      "default": "£69.99"
+    },
+    {
+      "type": "text",
+      "id": "price_label",
+      "label": "Price Label",
+      "default": "Early Access Pricing"
+    },
+    {
+      "type": "text",
+      "id": "scarcity_text",
+      "label": "Scarcity Text",
+      "default": "First Drop: Limited to 500"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Story: CTA"
+    }
+  ]
+}
+{% endschema %}
